@@ -1,0 +1,8 @@
+grafana/
+ provisioning/
+  datasources/
+   prometheus.yml # datasource=Prometheus
+  dashboards/
+  dashboards.yml # автоподхват json-дашбордов
+ dashboards/
+ app-observability.json # ваш экспортированный дашборд
