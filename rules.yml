@@ -1,0 +1,28 @@
+groups:
+  - name: BasicAlerts
+    rules:
+      - alert: HighLatency
+        expr: histogram_quantile(0.9, sum(rate(web_request_latency_seconds_bucket[5m])) by (le)) > 0.5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency (>0.5 s)"
+          description: "90-й перцентиль latency превышает 0.5 с за последние 5 минут."
+
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis instance is down"
+          description: "Экспортер Redis недоступен более 30 с."
+
+      - alert: OOMKill
+        expr: increase(container_oom_events_total[5m]) > 0
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container OOM-killed"
+          description: "За последние 5 минут контейнер был убит по OOM."

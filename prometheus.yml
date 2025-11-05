@@ -1,1 +1,60 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'devops-practice'
+    environment: 'development'
 
+# Правила алертов
+rule_files:
+  - 'alerts.yml'
+
+# Alertmanager
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
+
+# Сбор метрик
+scrape_configs:
+  # Prometheus сам себя
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['prometheus:9090']
+
+  # Web приложение
+  - job_name: 'web'
+    metrics_path: /api/metrics
+    static_configs:
+      - targets: ['web:3000']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: '([^:]+)(?::\d+)?'
+        replacement: '${1}'
+
+  # Traefik
+  - job_name: 'traefik'
+    static_configs:
+      - targets: ['traefik:8080']
+
+  # cAdvisor (метрики Docker контейнеров)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+  # Node Exporter (метрики хоста)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+    # Примечание: внутри Docker сети используется внутренний порт 9100
+
+  # Redis Exporter
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis-exporter:9121']
+
+  # k6 метрики (когда запущен)
+  - job_name: 'k6'
+    static_configs:
+      - targets: ['k6:6565']

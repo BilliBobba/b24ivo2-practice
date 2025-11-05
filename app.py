@@ -3,16 +3,25 @@ import redis
 import os
 import time
 import socket
+import logging
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
 # Подключение к Redis
-redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
+redis_url = os.getenv('REDIS_URL', 'redis://redis:6379')
 try:
     r = redis.from_url(redis_url, decode_responses=True)
+    logger.info(f"Connected to Redis at {redis_url}")
 except Exception as e:
-    print(f"Warning: Could not connect to Redis: {e}")
+    logger.error(f"Could not connect to Redis: {e}")
     r = None
 
 # Prometheus метрики
@@ -43,8 +52,9 @@ def index():
     if r:
         try:
             visit_count = r.incr('visit_count')
+            logger.info(f"Visit count: {visit_count} from container {container_id}")
         except Exception as e:
-            print(f"Redis error: {e}")
+            logger.error(f"Redis error: {e}")
     
     return jsonify({
         'message': 'DevOps Practice - Load Testing Demo',
@@ -75,6 +85,18 @@ def health():
 def metrics():
     """Prometheus метрики"""
     return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
+
+@app.route('/error')
+def error():
+    """Эндпоинт для генерации тестовой ошибки (Задание 3)"""
+    container_id = socket.gethostname()
+    error_message = f"ERROR: Test error endpoint called from container {container_id}"
+    logger.error(error_message)
+    return jsonify({
+        'error': 'Test error generated',
+        'container_id': container_id,
+        'message': 'Check Loki logs for this error'
+    }), 500
 
 @app.route('/slow')
 def slow():
